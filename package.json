@@ -1,0 +1,19 @@
+{
+  "name": "bubble-search",
+  "version": "1.0.0",
+  "description": "Enhanced version of Perplexity",
+  "scripts": {
+    "client": "cd client && pnpm dev",
+    "server": "cd server && pnpm dev",
+    "dev": "concurrently \"pnpm run server\" \"pnpm run client\"",
+    "install:all": "pnpm install && cd client && pnpm install && cd ../server && pnpm install",
+    "build": "cd server && pnpm build && cd ../client && pnpm build",
+    "start": "cd server && pnpm start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

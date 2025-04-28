@@ -1,9 +1,12 @@
+// src/pages/ApiKeys.tsx
+import { Alert, Button, Card, Input } from '@rewind-ui/core';
+import { animate } from 'animejs';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+import MainLayout from '../components/MainLayout';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabaseClient';
-import anime from 'animejs';
-import { Card, TextInput, Button, Alert } from 'rewind-ui';
 
 interface ApiKey {
   id?: number;
@@ -28,8 +31,7 @@ const ApiKeys: React.FC = () => {
   useEffect(() => {
     // Animation for the API keys form
     if (formRef.current) {
-      anime({
-        targets: formRef.current,
+      animate(formRef.current, {
         opacity: [0, 1],
         translateY: [20, 0],
         easing: 'easeOutExpo',
@@ -120,53 +122,58 @@ const ApiKeys: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div ref={formRef} className="w-full max-w-md">
-        <Card className="p-8">
-          <h2 className="text-2xl font-bold text-center mb-6">Add Your API Keys</h2>
+    <MainLayout>
+      <div ref={formRef}>
+        <Card shadow="lg" className="overflow-hidden">
+          <Card.Header className="bg-white border-b border-gray-100">
+            <h2 className="text-2xl font-semibold text-center text-gray-800">API Keys</h2>
+            <p className="text-center text-gray-500 mt-1">Add your API keys to continue</p>
+          </Card.Header>
           
-          {error && (
-            <Alert color="red" className="mb-4">
-              {error}
-            </Alert>
-          )}
-          
-          {success && (
-            <Alert color="green" className="mb-4">
-              {success}
-            </Alert>
-          )}
-          
-          <div className="space-y-4">
-            {apiKeys.map((key, index) => (
-              <div key={key.service_name}>
-                <TextInput
-                  label={`${key.service_name} API Key`}
-                  id={`apiKey-${index}`}
-                  type="password"
-                  value={key.api_key}
-                  onChange={(e) => handleChange(index, e.target.value)}
-                  fullWidth
-                  placeholder={`Enter your ${key.service_name} API key`}
-                />
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-6">
+          <Card.Body className="px-6 py-8">
+            {error && (
+              <Alert color="red" className="mb-6">
+                {error}
+              </Alert>
+            )}
+            
+            {success && (
+              <Alert color="green" className="mb-6">
+                {success}
+              </Alert>
+            )}
+            
+            <div className="space-y-6">
+              {apiKeys.map((key, index) => (
+                <div key={key.service_name}>
+                  <Input
+                    label={`${key.service_name} API Key`}
+                    id={`apiKey-${index}`}
+                    type="password"
+                    value={key.api_key}
+                    onChange={(e) => handleChange(index, e.target.value)}
+                    fullWidth
+                    placeholder={`Enter your ${key.service_name} API key`}
+                    shadow="sm"
+                  />
+                </div>
+              ))}
+            </div>
+            
             <Button
               onClick={handleSave}
               color="blue"
               loading={saving}
               disabled={saving}
               fullWidth
+              className="mt-8"
             >
               {saving ? 'Saving...' : 'Save and Continue'}
             </Button>
-          </div>
+          </Card.Body>
         </Card>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 

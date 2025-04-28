@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+// src/pages/Login.tsx
+import { Alert, Button, Card, Input } from '@rewind-ui/core';
+import { animate } from 'animejs';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
+import MainLayout from '../components/MainLayout';
 import { useAuth } from '../contexts/AuthContext';
-import anime from 'animejs';
-import { Card, TextInput, Button, Alert } from 'rewind-ui';
-import { useEffect, useRef } from 'react';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -15,8 +17,7 @@ const Login: React.FC = () => {
   useEffect(() => {
     // Animation for the login form
     if (formRef.current) {
-      anime({
-        targets: formRef.current,
+      animate(formRef.current, {
         opacity: [0, 1],
         translateY: [20, 0],
         easing: 'easeOutExpo',
@@ -35,66 +36,74 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div ref={formRef} className="w-full max-w-md">
-        <Card className="p-8">
-          <h2 className="text-2xl font-bold text-center mb-6">Login to Your Account</h2>
+    <MainLayout>
+      <div ref={formRef}>
+        <Card shadow="lg" className="overflow-hidden">
+          <Card.Header className="bg-white border-b border-gray-100">
+            <h2 className="text-2xl font-semibold text-center text-gray-800">Welcome Back</h2>
+            <p className="text-center text-gray-500 mt-1">Login to your account</p>
+          </Card.Header>
           
-          {error && (
-            <Alert color="red" className="mb-4">
-              {error}
-            </Alert>
-          )}
-          
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <TextInput
-                label="Email"
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                fullWidth
-                placeholder="Your email"
-              />
-            </div>
+          <Card.Body className="px-6 py-8">
+            {error && (
+              <Alert color="red" className="mb-6">
+                {error}
+              </Alert>
+            )}
             
-            <div className="mb-6">
-              <TextInput
-                label="Password"
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <Input
+                  label="Email Address"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  fullWidth
+                  placeholder="you@example.com"
+                  shadow="sm"
+                />
+              </div>
+              
+              <div>
+                <Input
+                  label="Password"
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  fullWidth
+                  placeholder="Your password"
+                  shadow="sm"
+                />
+              </div>
+              
+              <Button
+                type="submit"
+                color="blue"
+                loading={loading}
+                disabled={loading}
                 fullWidth
-                placeholder="Your password"
-              />
-            </div>
-            
-            <Button
-              type="submit"
-              color="blue"
-              loading={loading}
-              disabled={loading}
-              fullWidth
-            >
-              {loading ? 'Logging in...' : 'Login'}
-            </Button>
-          </form>
+                className="mt-6"
+              >
+                {loading ? 'Logging in...' : 'Sign In'}
+              </Button>
+            </form>
+          </Card.Body>
           
-          <div className="mt-4 text-center">
-            <p>
+          <Card.Footer className="bg-gray-50 border-t border-gray-100 px-6 py-4">
+            <p className="text-center text-gray-600">
               Don't have an account?{' '}
-              <Link to="/register" className="text-blue-500 hover:text-blue-700">
+              <Link to="/register" className="text-blue-600 hover:text-blue-800 font-medium">
                 Register here
               </Link>
             </p>
-          </div>
+          </Card.Footer>
         </Card>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 

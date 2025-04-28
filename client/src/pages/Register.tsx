@@ -1,8 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+// src/pages/Register.tsx
+import { Alert, Button, Card, Input } from '@rewind-ui/core';
+import { animate } from 'animejs';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
+import MainLayout from '../components/MainLayout';
 import { useAuth } from '../contexts/AuthContext';
-import anime from 'animejs';
-import { Card, TextInput, Button, Alert } from 'rewind-ui';
 
 const Register: React.FC = () => {
   const [name, setName] = useState('');
@@ -18,8 +21,7 @@ const Register: React.FC = () => {
   useEffect(() => {
     // Animation for the register form
     if (formRef.current) {
-      anime({
-        targets: formRef.current,
+      animate(formRef.current, {
         opacity: [0, 1],
         translateY: [20, 0],
         easing: 'easeOutExpo',
@@ -45,92 +47,102 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div ref={formRef} className="w-full max-w-md">
-        <Card className="p-8">
-          <h2 className="text-2xl font-bold text-center mb-6">Create an Account</h2>
+    <MainLayout>
+      <div ref={formRef}>
+        <Card shadow="lg" className="overflow-hidden">
+          <Card.Header className="bg-white border-b border-gray-100">
+            <h2 className="text-2xl font-semibold text-center text-gray-800">Create an Account</h2>
+            <p className="text-center text-gray-500 mt-1">Join our platform</p>
+          </Card.Header>
           
-          {(error || formError) && (
-            <Alert color="red" className="mb-4">
-              {formError || error}
-            </Alert>
-          )}
+          <Card.Body className="px-6 py-8">
+            {(error || formError) && (
+              <Alert color="red" className="mb-6">
+                {formError || error}
+              </Alert>
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <Input
+                  label="Full Name"
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  fullWidth
+                  placeholder="John Doe"
+                  shadow="sm"
+                />
+              </div>
+              
+              <div>
+                <Input
+                  label="Email Address"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  fullWidth
+                  placeholder="you@example.com"
+                  shadow="sm"
+                />
+              </div>
+              
+              <div>
+                <Input
+                  label="Password"
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  fullWidth
+                  placeholder="Choose a secure password"
+                  shadow="sm"
+                />
+              </div>
+              
+              <div>
+                <Input
+                  label="Confirm Password"
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  fullWidth
+                  placeholder="Confirm your password"
+                  shadow="sm"
+                />
+              </div>
+              
+              <Button
+                type="submit"
+                color="blue"
+                loading={loading}
+                disabled={loading}
+                fullWidth
+                className="mt-6"
+              >
+                {loading ? 'Creating account...' : 'Register'}
+              </Button>
+            </form>
+          </Card.Body>
           
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <TextInput
-                label="Name"
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                fullWidth
-                placeholder="Your name"
-              />
-            </div>
-            
-            <div className="mb-4">
-              <TextInput
-                label="Email"
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                fullWidth
-                placeholder="Your email"
-              />
-            </div>
-            
-            <div className="mb-4">
-              <TextInput
-                label="Password"
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                fullWidth
-                placeholder="Choose a password"
-              />
-            </div>
-            
-            <div className="mb-6">
-              <TextInput
-                label="Confirm Password"
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                fullWidth
-                placeholder="Confirm your password"
-              />
-            </div>
-            
-            <Button
-              type="submit"
-              color="blue"
-              loading={loading}
-              disabled={loading}
-              fullWidth
-            >
-              {loading ? 'Creating account...' : 'Register'}
-            </Button>
-          </form>
-          
-          <div className="mt-4 text-center">
-            <p>
+          <Card.Footer className="bg-gray-50 border-t border-gray-100 px-6 py-4">
+            <p className="text-center text-gray-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-500 hover:text-blue-700">
+              <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">
                 Login here
               </Link>
             </p>
-          </div>
+          </Card.Footer>
         </Card>
       </div>
-    </div>
+    </MainLayout>
   );
 };
 

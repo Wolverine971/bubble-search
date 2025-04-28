@@ -1,9 +1,10 @@
-import express from 'express';
+import { createClient } from '@supabase/supabase-js';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { createClient } from '@supabase/supabase-js';
-import authRoutes from './routes/auth';
+import express from 'express';
+
 import apiKeyRoutes from './routes/apiKeys';
+import authRoutes from './routes/auth';
 
 dotenv.config();
 
