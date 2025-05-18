@@ -10,6 +10,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const express_1 = __importDefault(require("express"));
 const apiKeys_1 = __importDefault(require("./routes/apiKeys"));
 const auth_1 = __importDefault(require("./routes/auth"));
+const search_1 = __importDefault(require("./routes/search"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +22,7 @@ exports.supabase = (0, supabase_js_1.createClient)(process.env.SUPABASE_URL || '
 // Routes
 app.use('/api/auth', auth_1.default);
 app.use('/api/keys', apiKeys_1.default);
+app.use('/api/search', search_1.default);
 // Health check
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok' });

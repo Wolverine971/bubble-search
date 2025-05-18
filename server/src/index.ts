@@ -1,35 +1,46 @@
-import { createClient } from '@supabase/supabase-js';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import { config } from 'dotenv';
+// src/index.ts
 import express from 'express';
 
-import apiKeyRoutes from './routes/apiKeys';
-import authRoutes from './routes/auth';
+import enhancedSearchRoutes from './routes/enhancedSearchRoutes';
+import searchRoutes from './routes/search';
 
-dotenv.config();
+// Load environment variables
+config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: '*', // Allow all origins for development
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
-// Supabase client
-export const supabase = createClient(
-    process.env.SUPABASE_URL || '',
-    process.env.SUPABASE_ANON_KEY || ''
-);
-
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/keys', apiKeyRoutes);
-
-// Health check
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'ok' });
+app.get('/', (req, res) => {
+    res.send('Bubble Search API is running');
 });
 
+app.use('/api/search', searchRoutes);
+app.use('/api/enhanced-search', enhancedSearchRoutes);
+
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Server error:', err);
+    res.status(500).json({
+        error: 'Internal server error',
+        message: err.message
+    });
+});
+
+// Start server
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`- Regular Search API: http://localhost:${PORT}/api/search`);
+    console.log(`- Enhanced Search API: http://localhost:${PORT}/api/enhanced-search`);
 });

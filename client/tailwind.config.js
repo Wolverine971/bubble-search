@@ -12,10 +12,19 @@ module.exports = {
     require("@tailwindcss/forms")({
       strategy: "class", // only generate classes
     }),
+    require("tailwind-scrollbar"),
   ],
   theme: {
     extend: {
-      // Add any custom theme extensions here
+      animation: {
+        fadeIn: "fadeIn 0.3s ease-in-out forwards",
+      },
+      keyframes: {
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+      },
     },
   },
 };
