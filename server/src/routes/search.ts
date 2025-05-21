@@ -1,7 +1,8 @@
 // src/routes/search.ts
 import express, { Request, Response } from 'express';
 
-import { executeApprovedSearchPlan, executeEnhancedSearchWithProgress } from '../services/searchGraph';
+import { planSearch } from '../services/planSearch';
+import { executeApprovedSearchSteps, executeEnhancedSearchWithProgress } from '../services/searchGraph';
 import { SearchIntent, SearchState } from '../types/search';
 
 const router = express.Router();
@@ -14,9 +15,11 @@ interface SearchRequestBody {
 
 interface ContinueSearchRequestBody {
     query: string;
-    plan: string[];
+    plan: { step: string; stepType: string }[];
     approved: boolean;
-    edits?: string[];
+    test?: boolean;
+    intent: SearchIntent;
+    querySummary: string;
 }
 
 // Test data - modified to include search plans
@@ -172,122 +175,14 @@ const validateSearchRequest = (req: Request, res: Response, next: express.NextFu
 
 // Main search endpoint with streaming
 router.post('/', validateSearchRequest, async (req: Request, res: Response) => {
-    const { query, test } = req.body as SearchRequestBody;
+    await planSearch(req, res);
 
-    // Set headers for SSE
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    try {
-        if (test) {
-            // Step 1: Intent classification
-            const intent = getTestIntent(query);
-            res.write(`data: ${JSON.stringify({
-                stage: 'classifying',
-                data: { query, intent }
-            })}\n\n`);
-
-            // Add a small delay to simulate processing
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Step 2: Query summary
-            const querySummary = getTestSummary(query, intent);
-            res.write(`data: ${JSON.stringify({
-                stage: 'summarizing',
-                data: { query, intent, querySummary }
-            })}\n\n`);
-
-            // Add a small delay to simulate processing
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Step a3: Generate search plan
-            const searchPlan = getTestSearchPlan(query, intent);
-            const needsApproval = searchPlan.length > 2;
-
-            res.write(`data: ${JSON.stringify({
-                stage: 'planning',
-                data: {
-                    query,
-                    intent,
-                    querySummary,
-                    searchPlan,
-                    needsApproval
-                }
-            })}\n\n`);
-
-            // If plan needs approval, stop streaming here and wait for user input
-            if (needsApproval) {
-                res.end();
-                return;
-            }
-
-            // Add a small delay to simulate processing
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Step 4: Search results (only if no approval needed)
-            // Re-use the existing test results functionality
-            const { results, answer } = getTestResults(query, intent);
-
-            res.write(`data: ${JSON.stringify({
-                stage: 'searching',
-                data: {
-                    query,
-                    intent,
-                    querySummary,
-                    searchPlan,
-                    results,
-                    answer
-                }
-            })}\n\n`);
-
-            // Step 5: Complete
-            res.write(`data: ${JSON.stringify({
-                stage: 'complete',
-                data: {
-                    query,
-                    intent,
-                    querySummary,
-                    searchPlan,
-                    results,
-                    answer
-                }
-            })}\n\n`);
-
-            res.end();
-        } else {
-            // Use our enhanced search function with progress tracking
-            await executeEnhancedSearchWithProgress(query.trim(), (stage, data) => {
-                // Send progress updates to the client
-                res.write(`data: ${JSON.stringify({
-                    stage,
-                    data
-                })}\n\n`);
-
-                // If plan needs approval, end the stream
-                if (stage === 'planning' && data.needsApproval) {
-                    res.end();
-                }
-            });
-
-            // Only end the response if it hasn't been ended due to needing approval
-            if (!res.writableEnded) {
-                res.end();
-            }
-        }
-    } catch (error) {
-        console.error('Error in search endpoint:', error);
-        res.write(`data: ${JSON.stringify({
-            stage: 'error',
-            error: 'An error occurred while processing your search'
-        })}\n\n`);
-        res.end();
-    }
+    res.end();
 });
 
 // New endpoint to continue search after plan approval
 router.post('/continue', async (req: Request, res: Response) => {
-    const { query, plan, approved, edits } = req.body as ContinueSearchRequestBody;
+    const { query, plan, approved, test, intent, querySummary } = req.body as ContinueSearchRequestBody;
 
     // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
@@ -303,7 +198,7 @@ router.post('/continue', async (req: Request, res: Response) => {
                 stage: 'planning',
                 data: {
                     query,
-                    searchPlan: edits || plan,
+                    searchPlan: plan,
                     needsApproval: true
                 }
             })}\n\n`);
@@ -312,149 +207,13 @@ router.post('/continue', async (req: Request, res: Response) => {
         }
 
         // If we're in test mode, simulate executing the plan with entity analysis
+
         if (req.query.test === 'true') {
-            // Step 1: Update that plan is approved
-            res.write(`data: ${JSON.stringify({
-                stage: 'plan_approved',
-                data: {
-                    query,
-                    searchPlan: plan,
-                    needsApproval: false
-                }
-            })}\n\n`);
-
-            // Generate test intent for simulation
-            const intent = getTestIntent(query);
-            const querySummary = getTestSummary(query, intent);
-
-            // Step 2: Simulate executing each step with entity analysis
-            const stepResults = [];
-
-            for (let i = 0; i < plan.length; i++) {
-                // Notify of step execution
-                res.write(`data: ${JSON.stringify({
-                    stage: 'executing_plan_step',
-                    data: {
-                        currentStep: i + 1,
-                        totalSteps: plan.length,
-                        stepDescription: plan[i]
-                    }
-                })}\n\n`);
-
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                // Generate step query
-                const stepQuery = `${query} ${plan[i].replace(/Step \d+: Search for /, '').replace(/Find /, '')}`;
-
-                res.write(`data: ${JSON.stringify({
-                    stage: 'step_query_generated',
-                    data: {
-                        currentStep: i + 1,
-                        totalSteps: plan.length,
-                        stepDescription: plan[i],
-                        stepQuery
-                    }
-                })}\n\n`);
-
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                // Simulate search results for this step
-                const { results, answer } = getTestResults(stepQuery, intent);
-
-                // Simulate entity recognition
-                const entities = await simulateEntityRecognition(results, answer);
-
-                // Add to step results
-                const stepResult = {
-                    step: plan[i],
-                    stepIndex: i,
-                    query: stepQuery,
-                    results,
-                    answer,
-                    entities
-                };
-
-                stepResults.push(stepResult);
-
-                // Send step completion with entities
-                res.write(`data: ${JSON.stringify({
-                    stage: 'step_completed',
-                    data: {
-                        currentStep: i + 1,
-                        totalSteps: plan.length,
-                        stepResult
-                    }
-                })}\n\n`);
-
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            // Combine all entities from all steps
-            const allEntities = [];
-            const entitiesMap = {};
-
-            for (const stepResult of stepResults) {
-                for (const entity of stepResult.entities) {
-                    const key = `${entity.text.toLowerCase()}_${entity.label}`;
-
-                    if (!entitiesMap[key]) {
-                        entitiesMap[key] = {
-                            text: entity.text,
-                            label: entity.label,
-                            sentences: [...entity.sentences]
-                        };
-                    } else {
-                        // Add unique sentences
-                        for (const sentence of entity.sentences) {
-                            if (!entitiesMap[key].sentences.includes(sentence)) {
-                                entitiesMap[key].sentences.push(sentence);
-                            }
-                        }
-                    }
-                }
-            }
-
-            const combinedEntities = Object.values(entitiesMap);
-
-            // Create website analyses from step results
-            const websiteAnalyses = stepResults.flatMap(step =>
-                step.results.map(result => ({
-                    url: result.url,
-                    title: result.title,
-                    searchQuery: step.query,
-                    content: result.content,
-                    entities: step.entities.filter(entity =>
-                        result.content.toLowerCase().includes(entity.text.toLowerCase())
-                    ),
-                    isExpanded: false,
-                    stepIndex: step.stepIndex
-                }))
-            );
-
-            // Final combined results
-            const combinedResults = stepResults.flatMap(step => step.results).slice(0, 5);
-            const finalAnswer = stepResults[stepResults.length - 1].answer;
-
-            // Send the final analysis-complete event
-            res.write(`data: ${JSON.stringify({
-                stage: 'analysis_complete',
-                data: {
-                    query,
-                    intent,
-                    querySummary,
-                    searchPlan: plan,
-                    results: combinedResults,
-                    answer: finalAnswer,
-                    stepResults,
-                    answerEntities: combinedEntities,
-                    websiteAnalyses
-                }
-            })}\n\n`);
-
+            await preformTestMockSearch(req, res);
             res.end();
         } else {
             // Execute the approved plan with entity recognition
-            await executeApprovedSearchPlan(query, plan, (stage, data) => {
+            await executeApprovedSearchSteps(query, plan, intent, querySummary, (stage, data) => {
                 // Send progress updates to the client
                 res.write(`data: ${JSON.stringify({
                     stage,
@@ -473,6 +232,146 @@ router.post('/continue', async (req: Request, res: Response) => {
         res.end();
     }
 });
+
+const preformTestMockSearch = async (req: Request, res: Response) => {
+    const { query, plan, approved, test, intent, querySummary } = req.body as ContinueSearchRequestBody;
+    // Step 1: Update that plan is approved
+    res.write(`data: ${JSON.stringify({
+        stage: 'plan_approved',
+        data: {
+            query,
+            searchPlan: plan,
+            needsApproval: false
+        }
+    })}\n\n`);
+
+
+    // Step 2: Simulate executing each step with entity analysis
+    const stepResults = [];
+
+    for (let i = 0; i < plan.length; i++) {
+        // Notify of step execution
+        res.write(`data: ${JSON.stringify({
+            stage: 'executing_plan_step',
+            data: {
+                currentStep: i + 1,
+                totalSteps: plan.length,
+                stepDescription: plan[i]
+            }
+        })}\n\n`);
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Generate step query
+        const stepQuery = `${query} ${plan[i].replace(/Step \d+: Search for /, '').replace(/Find /, '')}`;
+
+        res.write(`data: ${JSON.stringify({
+            stage: 'step_query_generated',
+            data: {
+                currentStep: i + 1,
+                totalSteps: plan.length,
+                stepDescription: plan[i],
+                stepQuery
+            }
+        })}\n\n`);
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Simulate search results for this step
+        const { results, answer } = getTestResults(stepQuery, intent);
+
+        // Simulate entity recognition
+        const entities = await simulateEntityRecognition(results, answer);
+
+        // Add to step results
+        const stepResult = {
+            step: plan[i],
+            stepIndex: i,
+            query: stepQuery,
+            results,
+            answer,
+            entities
+        };
+
+        stepResults.push(stepResult);
+
+        // Send step completion with entities
+        res.write(`data: ${JSON.stringify({
+            stage: 'step_completed',
+            data: {
+                currentStep: i + 1,
+                totalSteps: plan.length,
+                stepResult
+            }
+        })}\n\n`);
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Combine all entities from all steps
+    const allEntities = [];
+    const entitiesMap = {};
+
+    for (const stepResult of stepResults) {
+        for (const entity of stepResult.entities) {
+            const key = `${entity.text.toLowerCase()}_${entity.label}`;
+
+            if (!entitiesMap[key]) {
+                entitiesMap[key] = {
+                    text: entity.text,
+                    label: entity.label,
+                    sentences: [...entity.sentences]
+                };
+            } else {
+                // Add unique sentences
+                for (const sentence of entity.sentences) {
+                    if (!entitiesMap[key].sentences.includes(sentence)) {
+                        entitiesMap[key].sentences.push(sentence);
+                    }
+                }
+            }
+        }
+    }
+
+    const combinedEntities = Object.values(entitiesMap);
+
+    // Create website analyses from step results
+    const websiteAnalyses = stepResults.flatMap(step =>
+        step.results.map(result => ({
+            url: result.url,
+            title: result.title,
+            searchQuery: step.query,
+            content: result.content,
+            entities: step.entities.filter(entity =>
+                result.content.toLowerCase().includes(entity.text.toLowerCase())
+            ),
+            isExpanded: false,
+            stepIndex: step.stepIndex
+        }))
+    );
+
+    // Final combined results
+    const combinedResults = stepResults.flatMap(step => step.results).slice(0, 5);
+    const finalAnswer = stepResults[stepResults.length - 1].answer;
+
+    // Send the final analysis-complete event
+    res.write(`data: ${JSON.stringify({
+        stage: 'analysis_complete',
+        data: {
+            query,
+            intent,
+            querySummary,
+            searchPlan: plan,
+            results: combinedResults,
+            answer: finalAnswer,
+            stepResults,
+            answerEntities: combinedEntities,
+            websiteAnalyses
+        }
+    })}\n\n`);
+
+    res.end();
+}
 
 // Helper function to generate test search results (reused from your original code)
 const getTestResults = (query: string, intent: SearchIntent) => {

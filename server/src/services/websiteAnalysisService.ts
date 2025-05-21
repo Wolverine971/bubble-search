@@ -1,15 +1,8 @@
 // src/services/websiteAnalysisService.ts
-import { TavilySearchResult } from '../types/search';
-import { analyzeText, RecognizedEntity } from './spacyService';
+import { RecognizedEntity, TavilySearchResult, WebsiteAnalysis } from '../types/search';
+import { analyzeText } from './spacyService';
 
-export interface WebsiteAnalysis {
-    url: string;
-    title: string;
-    searchQuery: string;
-    content: string;
-    entities: RecognizedEntity[];
-    isExpanded?: boolean;
-}
+
 
 /**
  * Analyze a single website from search results

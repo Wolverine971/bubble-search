@@ -4,12 +4,9 @@ import simpleEntityExtractor from './simpleEntityExtractor';
 
 // src/services/spacyService.ts - Updated to use Python spaCy server
 import 'dotenv/config';
+import { RecognizedEntity } from '../types/search';
 
-export interface RecognizedEntity {
-    text: string;
-    label: string;
-    sentences: string[];
-}
+
 
 // Default spaCy server URL - can be set via environment variable
 const SPACY_SERVER_URL = process.env.SPACY_SERVER_URL || 'http://127.0.0.1:5001'

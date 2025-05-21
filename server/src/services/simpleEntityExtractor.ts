@@ -4,11 +4,9 @@
  * Used as a fallback when the spaCy server is unavailable
  */
 
-export interface RecognizedEntity {
-    text: string;
-    label: string;
-    sentences: string[];
-}
+import { RecognizedEntity } from "../types/search";
+
+
 
 /**
  * Extract sentences from text

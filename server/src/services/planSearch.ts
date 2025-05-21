@@ -1,10 +1,10 @@
 // src/routes/enhancedSearchRoutes.ts
 import express, { Request, Response } from 'express';
 
-import { executeEnhancedSearchWithProgress } from '../services/searchGraph';
-import { analyzeText, generateTestEntities } from '../services/spacyService';
 import { performSearch } from '../services/tavily';
-import { SearchIntent, SearchState, TavilySearchResult } from '../types/search';
+import { SearchIntent, SearchState, TavilySearchResult, WebsiteAnalysis } from '../types/search';
+import { executeEnhancedSearchWithProgress } from './searchGraph';
+import { analyzeText, generateTestEntities } from './spacyService';
 
 const router = express.Router();
 
@@ -13,15 +13,7 @@ interface EnhancedSearchRequestBody {
     test?: boolean;
 }
 
-// Website analysis type
-export interface WebsiteAnalysis {
-    url: string;
-    title: string;
-    searchQuery: string;
-    content: string;
-    entities: any[];
-    isExpanded?: boolean;
-}
+
 
 // Validate the search request
 const validateSearchRequest = (req: Request, res: Response, next: express.NextFunction) => {
@@ -175,7 +167,10 @@ const getTestResults = (query: string): { results: TavilySearchResult[], answer:
 };
 
 // Enhanced search endpoint with entity recognition and streaming
-router.post('/', validateSearchRequest, async (req: Request, res: Response) => {
+
+
+export const planSearch = async (req: Request, res: Response) => {
+
     const { query, test = false } = req.body as EnhancedSearchRequestBody;
 
     // Set headers for server-sent events (SSE)
@@ -343,6 +338,10 @@ router.post('/', validateSearchRequest, async (req: Request, res: Response) => {
         })}\n\n`);
         res.end();
     }
-});
+}
 
-export default router;
+
+
+
+
+

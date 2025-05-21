@@ -3,7 +3,6 @@ import { config } from 'dotenv';
 // src/index.ts
 import express from 'express';
 
-import enhancedSearchRoutes from './routes/enhancedSearchRoutes';
 import searchRoutes from './routes/search';
 
 // Load environment variables
@@ -27,7 +26,6 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/search', searchRoutes);
-app.use('/api/enhanced-search', enhancedSearchRoutes);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -42,5 +40,4 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`- Regular Search API: http://localhost:${PORT}/api/search`);
-    console.log(`- Enhanced Search API: http://localhost:${PORT}/api/enhanced-search`);
 });

@@ -4,11 +4,8 @@
  * Uses regex patterns to identify common entity types
  */
 
-export interface RecognizedEntity {
-    text: string;
-    label: string;
-    sentences: string[];
-}
+import { RecognizedEntity } from "../types/search";
+
 
 /**
  * Extract sentences from text

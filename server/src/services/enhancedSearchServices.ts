@@ -1,17 +1,10 @@
 // src/services/enhancedSearchServices.ts
 import axios from 'axios';
-import { analyzeText, RecognizedEntity } from './spacyService';
-import { SearchIntent, TavilySearchResult } from '../types/search';
+import { analyzeText } from './spacyService';
+import { RecognizedEntity, SearchIntent, TavilySearchResult, WebsiteAnalysis } from '../types/search';
 
 // Interface for the website analysis result
-export interface WebsiteAnalysis {
-    url: string;
-    title: string;
-    searchQuery: string;
-    content: string;
-    entities: RecognizedEntity[];
-    isExpanded: boolean;
-}
+
 
 // Simulated function to fetch the content of a webpage
 const fetchWebpageContent = async (url: string): Promise<string> => {

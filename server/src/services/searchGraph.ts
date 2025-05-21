@@ -56,15 +56,18 @@ Analyze the following search query and determine the steps needed to fully answe
 If the query is simple and can be answered in a single search, return an array with just one step.
 If the query requires multiple searches or has multiple parts, break it down into logical steps.
 
+Some steps need to be done sequentially, while others can be done in parallel. So add a label to each step indicating if it is a sequential or parallel step.
+The steps that are sequential will look at the previous step's results to determine it's output.
+
 Search query: {query}
 Intent: {intent}
 
 For each step, provide:
 1. A description of what information needs to be searched for
-2. How this contributes to the overall answer
+2. The type of step (sequential or parallel)
 
 Format your response as a valid JSON array of strings, where each string is a step in the search plan.
-Example format: ["Step 1: Search for X to understand Y", "Step 2: Find Z to compare with Y"]
+Example format: [{{"step": "Step 1: Lookup information about A", stepType: "parallel"}}, {{"step":"Step 2: Lookup information about B", stepType: "parallel"}}, {{"step":"Step 3: Take the information learned about A and B and come up with an answer", stepType: "sequential"}}]
 
 Search Plan:
 `);
@@ -289,17 +292,13 @@ export const executeEnhancedSearchWithProgress = async (
 };
 
 // Execute search with an approved plan
-export const executeApprovedSearchPlan = async (
+export const executeApprovedSearchSteps = async (
   query: string,
-  searchPlan: string[],
+  searchPlan: { step: string, stepType: string }[],
+  intent: SearchIntent,
+  querySummary: string,
   progressCallback: (stage: string, data: Partial<SearchState>) => void
 ): Promise<SearchState> => {
-  // Get the existing data
-  const intent = await classifyIntentChain.invoke({ query });
-  const querySummary = await generateQuerySummaryChain.invoke({
-    query,
-    intent: intent as SearchIntent
-  });
 
   // Notify that we're starting with the approved plan
   progressCallback('executing_plan', {
@@ -312,6 +311,7 @@ export const executeApprovedSearchPlan = async (
 
   try {
     // Execute the plan with entity recognition
+    // Get the steps then develop the plan
     const {
       results,
       answer,
